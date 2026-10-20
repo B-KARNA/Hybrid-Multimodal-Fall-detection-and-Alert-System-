@@ -1,0 +1,1 @@
+# FallAlert ProGuard Rules

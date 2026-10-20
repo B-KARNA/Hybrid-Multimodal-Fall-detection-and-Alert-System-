@@ -1,0 +1,57 @@
+# =============================================================================
+# Root .gitignore for Hybrid Multimodal Fall Detection and Alert System (HMFDA)
+# =============================================================================
+
+# Tools, IDE, OS
+tools/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*.bak
+.git_bak/
+.backend_git_backup/
+
+# Android & Gradle
+.gradle/
+**/.gradle/
+build/
+**/build/
+local.properties
+**/local.properties
+.cxx/
+captures/
+*.hprof
+*.apk
+*.aab
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+.venv*/
+venv/
+ENV/
+env/
+.env
+
+# Generated results & logs
+results/
+**/results/
+*.log
+
+# Raw datasets & recordings
+data/
+sisfall/
+*.csv
+*.mp4
+*.avi
+*.mov
+
+# Large intermediate models
+imu_fall_model.pkl
