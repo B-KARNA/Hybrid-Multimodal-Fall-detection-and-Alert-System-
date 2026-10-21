@@ -1,0 +1,67 @@
+# Local verification of the exact images that get pushed to AWS.
+#
+# Run from the repository root:
+#     docker compose -f deploy/docker-compose.yml up --build
+#
+# The dashboard is behind a profile because it is a separate concern: the
+# backend alone is what gets deployed.
+#     docker compose -f deploy/docker-compose.yml --profile dashboard up --build
+#
+# "context: .." resolves to the repository root. Compose resolves build paths
+# relative to THIS file's directory, not your shell's working directory, so
+# these commands behave the same from anywhere.
+
+services:
+
+  # ---------------------------------------------------------
+  # Alert Manager (8002) + outdoor detector (8000)
+  # This is the deployable service.
+  # ---------------------------------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/backend.Dockerfile
+    image: fallalert-backend:local
+    ports:
+      - "8002:8002"   # Alert Manager - the ONLY port the Android app needs
+      - "8000:8000"   # outdoor detector - optional, for direct diagnostics
+    environment:
+      ALERT_MANAGER_HOST: "0.0.0.0"
+      ALERT_MANAGER_PORT: "8002"
+      OUTDOOR_DETECTOR_PORT: "8000"
+      OUTDOOR_DETECTOR_URL: "http://127.0.0.1:8000"
+      ALERT_HOLD_SECONDS: "20"
+      SOURCE_COOLDOWN_SECONDS: "15"
+      # Optional hardening: pass it through from your shell. Leave unset to
+      # keep POST /event open (local testing).
+      #   $env:ALERT_SHARED_TOKEN="some-long-random-string"
+      ALERT_SHARED_TOKEN: "${ALERT_SHARED_TOKEN:-}"
+    restart: unless-stopped
+    healthcheck:
+      # curl is not present in a slim image, so probe with the standard library.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/status')"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # TF model loading is slow; give the detector time to come up first.
+      start_period: 60s
+
+  # ---------------------------------------------------------
+  # Streamlit dashboard - separate image, not part of the deployment.
+  # ---------------------------------------------------------
+  dashboard:
+    profiles: ["dashboard"]
+    build:
+      context: ..
+      dockerfile: deploy/dashboard.Dockerfile
+    image: fallalert-dashboard:local
+    ports:
+      - "8501:8501"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

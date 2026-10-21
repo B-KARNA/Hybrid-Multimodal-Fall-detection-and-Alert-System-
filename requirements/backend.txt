@@ -1,0 +1,11 @@
+# Backend container dependencies - Alert Manager + outdoor detector ONLY.
+#
+# Keep this list deliberately tiny: every extra package bloats the image and
+# slows every deploy. The Alert Manager is pure standard library; only the
+# outdoor LSTM service needs anything installed.
+#
+# tensorflow-cpu instead of tensorflow: the default wheel bundles roughly
+# 2.5 GB of CUDA libraries that are useless without a GPU instance.
+
+numpy==2.4.6
+tensorflow-cpu==2.21.0
