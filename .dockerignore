@@ -1,0 +1,53 @@
+# Build context filter for every image in deploy/.
+#
+# COPY already scopes exactly what lands in an image, so the job of this file
+# is to keep the context that gets sent to the Docker daemon small.
+#
+# NOTE: models/ is intentionally NOT excluded here. The backend image only
+# COPYs models/outdoor/, but the dashboard image needs models/vision/ as well,
+# and a .dockerignore applies to every build from this context.
+
+# Python build artefacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Not needed at runtime by any image
+src/
+baseline/
+data/
+datasets/
+logs/
+notebooks/
+
+# Streamlit UI and edge detector ship in their own images / stay local
+# (dashboard/ IS needed by the dashboard image, so it stays in the context)
+
+# Docs and samples
+*.pdf
+structure.txt
+Supplementary.pdf
+
+# Root-level duplicates of files that already live under models/ or baseline/
+yolo11n-pose.pt
+pose_landmarker_lite.task
+vision_fall_model.pkl
+imumodel.py
+visionmodel.py
+
+# Scratch
+*.log
+*.tmp
+.DS_Store

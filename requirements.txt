@@ -1,0 +1,13 @@
+# Convenience entry point for a full local development install.
+#
+# Deployment uses the per-target subsets instead, so the container image never
+# pulls in torch, ultralytics, streamlit or opencv:
+#
+#   requirements/backend.txt    -> cloud container (Alert Manager + outdoor LSTM)
+#   requirements/dashboard.txt  -> Streamlit dashboard
+#   requirements/edge.txt       -> indoor camera detector (own machine)
+#   requirements/dev.txt        -> training / evaluation scripts
+
+-r requirements/dashboard.txt
+-r requirements/edge.txt
+-r requirements/dev.txt
