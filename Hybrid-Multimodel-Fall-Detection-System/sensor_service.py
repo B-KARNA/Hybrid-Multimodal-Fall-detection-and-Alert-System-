@@ -53,6 +53,8 @@ sensor_buffer = []
 buffer_lock = threading.Lock()
 
 latest_probability = 0.0
+last_fall_time = 0.0
+FALL_HOLD_SECONDS = 20.0
 
 
 # ---------------------------------------------------------
@@ -354,6 +356,8 @@ class SensorHandler(BaseHTTPRequestHandler):
             # Requirement: only a confirmed FALL is forwarded to the shared
             # Alert Manager - NO FALL predictions are never reported.
             if fall:
+                with buffer_lock:
+                    last_fall_time = time.time()
                 report_fall_event(cur_prob)
 
             if probability is not None or kinematic_fall:
@@ -428,15 +432,15 @@ class SensorHandler(BaseHTTPRequestHandler):
 
         if self.path == "/status":
             with buffer_lock:
-                cur_prob = latest_probability
+                now_t = time.time()
+                is_active_fall = (now_t - last_fall_time < FALL_HOLD_SECONDS)
+                cur_prob = max(latest_probability, 0.965) if is_active_fall else latest_probability
                 cur_samples = len(sensor_buffer)
 
             response = {
                 "probability": cur_prob,
                 "threshold": THRESHOLD,
-                "fall": (
-                    cur_prob >= THRESHOLD
-                ),
+                "fall": is_active_fall or (cur_prob >= THRESHOLD),
                 "samples": cur_samples,
                 "connected": True
             }

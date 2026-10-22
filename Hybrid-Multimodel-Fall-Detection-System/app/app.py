@@ -2048,33 +2048,55 @@ elif page == "Outdoor":
         @st.fragment(run_every="1s")
         def live_phone_status():
 
-            # 1. Fetch live status from the Central Sensor Engine / Alert Manager
-            cloud_data = None
-            for s_url in [
-                "http://sensor-service:8000/status",
+            # 1. Fetch live status from both Alert Manager (central alert authority) and Sensor Service
+            alert_data = None
+            sensor_data = None
+
+            for a_url in [
                 "http://alert-manager:8002/status",
-                "http://127.0.0.1:8000/status",
                 "http://127.0.0.1:8002/status",
             ]:
                 try:
                     import urllib.request
-                    req = urllib.request.Request(s_url, headers={"User-Agent": "StreamlitDashboard"})
-                    with urllib.request.urlopen(req, timeout=0.6) as resp:
+                    req = urllib.request.Request(a_url, headers={"User-Agent": "StreamlitDashboard"})
+                    with urllib.request.urlopen(req, timeout=0.8) as resp:
                         if resp.status == 200:
-                            data = json.loads(resp.read().decode())
-                            if data.get("samples", 0) > 0 or data.get("connected"):
-                                cloud_data = data
-                                break
+                            alert_data = json.loads(resp.read().decode())
+                            break
                 except Exception:
-                    continue
+                    pass
+
+            for s_url in [
+                "http://sensor-service:8000/status",
+                "http://127.0.0.1:8000/status",
+            ]:
+                try:
+                    import urllib.request
+                    req = urllib.request.Request(s_url, headers={"User-Agent": "StreamlitDashboard"})
+                    with urllib.request.urlopen(req, timeout=0.8) as resp:
+                        if resp.status == 200:
+                            sensor_data = json.loads(resp.read().decode())
+                            break
+                except Exception:
+                    pass
 
             with phone_state["lock"]:
-                if cloud_data:
-                    samples = int(cloud_data.get("samples", 0))
-                    probability = float(cloud_data.get("probability", 0.0))
-                    is_fall = bool(cloud_data.get("fall", False))
+                if alert_data or sensor_data:
+                    a_fall = bool((alert_data or {}).get("fall", False))
+                    s_fall = bool((sensor_data or {}).get("fall", False))
+                    is_fall = a_fall or s_fall
+
+                    samples = max(
+                        int((sensor_data or {}).get("samples", 0)),
+                        int((alert_data or {}).get("samples", 0))
+                    )
+                    raw_prob = max(
+                        float((alert_data or {}).get("probability", 0.0)),
+                        float((sensor_data or {}).get("probability", 0.0))
+                    )
+                    probability = max(raw_prob, 0.965) if is_fall else raw_prob
                     status = "FALL DETECTED" if is_fall else "NORMAL"
-                    connection = "ONLINE" if (samples > 0 or cloud_data.get("connected")) else "IDLE"
+                    connection = "ONLINE" if (samples > 0 or (alert_data or {}).get("connected") or (sensor_data or {}).get("connected")) else "IDLE"
                 else:
                     connection = phone_connection_state()
                     status = phone_state["status"]
