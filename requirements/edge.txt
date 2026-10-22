@@ -1,0 +1,13 @@
+# Edge machine dependencies (edge/indoor_detector.py).
+#
+# Runs on the PC that owns the webcam - never in the cloud container, because
+# it needs a real camera device and a display.
+#
+# NOTE: this uses opencv-python (the GUI build), NOT opencv-python-headless.
+# The detector calls cv2.imshow / cv2.namedWindow to show the live annotated
+# window, and the headless build omits those functions entirely.
+
+numpy==2.4.6
+opencv-python==4.11.0.86
+tensorflow==2.21.0
+ultralytics==8.4.137
