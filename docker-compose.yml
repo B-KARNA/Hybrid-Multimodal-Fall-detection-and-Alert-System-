@@ -49,6 +49,8 @@ services:
       timeout: 5s
       retries: 3
     restart: unless-stopped
+    volumes:
+      - ./Hybrid-Multimodel-Fall-Detection-System/sensor_service.py:/app/sensor_service.py:ro
     networks:
       - hmfda-net
 
