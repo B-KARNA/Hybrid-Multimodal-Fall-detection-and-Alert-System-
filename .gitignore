@@ -55,3 +55,4 @@ sisfall/
 
 # Large intermediate models
 imu_fall_model.pkl
+*.orig

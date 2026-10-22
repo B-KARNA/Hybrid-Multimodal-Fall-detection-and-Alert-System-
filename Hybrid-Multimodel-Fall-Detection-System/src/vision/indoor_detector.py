@@ -1,6 +1,7 @@
 import json
 import os
 import threading
+import time
 import uuid
 from pathlib import Path
 from collections import deque
@@ -28,7 +29,15 @@ GRU_MODEL_PATH = (
     / "best_gru.keras"
 )
 
-YOLO_MODEL_NAME = "yolo11n-pose.pt"
+YOLO_MODEL_PATH = (
+    PROJECT_ROOT / "models" / "vision" / "yolo11n-pose.pt"
+    if (PROJECT_ROOT / "models" / "vision" / "yolo11n-pose.pt").exists()
+    else (
+        Path(__file__).resolve().parent / "yolo11n-pose.pt"
+        if (Path(__file__).resolve().parent / "yolo11n-pose.pt").exists()
+        else PROJECT_ROOT / "yolo11n-pose.pt"
+    )
+)
 
 
 # ============================================================
@@ -204,12 +213,33 @@ print("=" * 65)
 print("Loading YOLO Pose model...")
 
 pose_model = YOLO(
-    YOLO_MODEL_NAME
+    str(YOLO_MODEL_PATH)
 )
 
 print("Loading trained GRU model...")
 
-gru_model = tf.keras.models.load_model(
+def load_gru_detector_model(model_path):
+    try:
+        return tf.keras.models.load_model(model_path)
+    except Exception as e:
+        print(f"Direct Keras load encountered an issue: {e}")
+        print("Instantiating GRU architecture and loading weights directly...")
+        from tensorflow.keras import Sequential
+        from tensorflow.keras.layers import Input, GRU, Dense, Dropout, Bidirectional
+        model = Sequential([
+            Input(shape=(SEQUENCE_LENGTH, 34)),
+            Bidirectional(GRU(64, return_sequences=True)),
+            Dropout(0.30),
+            Bidirectional(GRU(32, return_sequences=False)),
+            Dropout(0.30),
+            Dense(32, activation="relu"),
+            Dropout(0.20),
+            Dense(1, activation="sigmoid")
+        ])
+        model.load_weights(model_path)
+        return model
+
+gru_model = load_gru_detector_model(
     GRU_MODEL_PATH
 )
 
@@ -732,7 +762,10 @@ def start_phone_server():
 
 def run_detector():
 
-    camera = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
+    if not camera.isOpened():
+        camera = cv2.VideoCapture(0)
 
     if not camera.isOpened():
 
@@ -753,6 +786,10 @@ def run_detector():
         cv2.CAP_PROP_FRAME_HEIGHT,
         720
     )
+
+    actual_w = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+    actual_h = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(f"Webcam opened successfully: {actual_w}x{actual_h} resolution.")
 
     # --------------------------------------------------------
     # Phone alert server
@@ -884,17 +921,26 @@ def run_detector():
     # LOOP
     # ========================================================
 
+    failed_reads = 0
+
     while True:
 
         success, frame = camera.read()
 
-        if not success:
+        if not success or frame is None:
+
+            failed_reads += 1
+            if failed_reads < 15:
+                time.sleep(0.05)
+                continue
 
             print(
                 "Could not read webcam frame."
             )
 
             break
+
+        failed_reads = 0
 
         # ----------------------------------------------------
         # YOLO TRACK
@@ -1345,8 +1391,16 @@ def run_detector():
         )
 
         # ----------------------------------------------------
-        # Keyboard
+        # Window Close / Keyboard
         # ----------------------------------------------------
+
+        try:
+            if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) < 1:
+                print()
+                print("Window closed by user.")
+                break
+        except Exception:
+            pass
 
         key = (
             cv2.waitKey(1)

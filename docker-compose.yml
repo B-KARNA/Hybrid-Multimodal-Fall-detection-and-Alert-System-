@@ -1,0 +1,100 @@
+services:
+  # ============================================================
+  # 1. Centralized Alert Manager (Port 8002)
+  # Deduplicates fall alerts, holds statuses, and coordinates mobile client
+  # ============================================================
+  alert-manager:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: hmfda-alert-manager
+    command: ["python", "-m", "src.alerting.alert_manager"]
+    ports:
+      - "${ALERT_MANAGER_PORT:-8002}:8002"
+    environment:
+      - ALERT_MANAGER_PORT=8002
+      - OUTDOOR_DETECTOR_URL=http://sensor-service:8000
+      - ALERT_HOLD_SECONDS=${ALERT_HOLD_SECONDS:-20}
+      - SOURCE_COOLDOWN_SECONDS=${SOURCE_COOLDOWN_SECONDS:-15}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8002/status || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - hmfda-net
+
+  # ============================================================
+  # 2. Outdoor Sensor Detector (Port 8000)
+  # Evaluates 9-channel IMU sensor batches using pre-trained Keras LSTM
+  # ============================================================
+  sensor-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: hmfda-sensor-service
+    command: ["python", "sensor_service.py"]
+    ports:
+      - "${SENSOR_PORT:-8000}:8000"
+    environment:
+      - SENSOR_PORT=8000
+      - ALERT_MANAGER_URL=http://alert-manager:8002
+    depends_on:
+      alert-manager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/status || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - hmfda-net
+
+  # ============================================================
+  # 3. 3D Digital Twin & Streamlit Monitoring Dashboard (Port 8501)
+  # Interactive 3D visualization, caretaker list & alert history
+  # ============================================================
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: hmfda-dashboard
+    ports:
+      - "${DASHBOARD_PORT:-8501}:8501"
+    environment:
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+      - TARGET_PHONE_NUMBER=${TARGET_PHONE_NUMBER:-}
+    volumes:
+      - ./Hybrid-Multimodel-Fall-Detection-System/data:/app/data
+    restart: unless-stopped
+    networks:
+      - hmfda-net
+
+  # ============================================================
+  # 4. Nginx Cloud Gateway & Mobile APK Distribution Server (Port 80)
+  # Reverse proxy for all microservices + 1-click APK download portal
+  # ============================================================
+  gateway:
+    image: nginx:alpine
+    container_name: hmfda-gateway
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/web:/usr/share/nginx/html:ro
+      - ./docker/web/download:/usr/share/nginx/html/download:ro
+    depends_on:
+      - alert-manager
+      - sensor-service
+      - dashboard
+    restart: unless-stopped
+    networks:
+      - hmfda-net
+
+networks:
+  hmfda-net:
+    driver: bridge

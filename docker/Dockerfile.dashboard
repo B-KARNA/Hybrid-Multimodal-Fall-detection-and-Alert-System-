@@ -1,0 +1,35 @@
+# ============================================================
+# Dockerfile.dashboard - Streamlit 3D Digital Twin & Monitor
+# ============================================================
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app
+
+WORKDIR /app
+
+# Install system libraries needed by OpenCV and Streamlit
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies
+COPY docker/requirements-dashboard.txt /tmp/requirements-dashboard.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /tmp/requirements-dashboard.txt
+
+# Copy backend code, models, and dashboard
+COPY Hybrid-Multimodel-Fall-Detection-System/ /app/
+
+# Expose Streamlit default port
+EXPOSE 8501
+
+# Healthcheck to verify Streamlit is running
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+# Launch Streamlit with external access enabled
+CMD ["streamlit", "run", "app/app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]

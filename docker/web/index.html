@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HMFDA Cloud Gateway - Fall Detection & Alert System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 26, 43, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(59, 130, 246, 0.4);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.25);
+      --accent: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: radial-gradient(circle at 50% 0%, #172554 0%, var(--bg) 60%);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    h1 {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 16px;
+      max-width: 620px;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 12px 30px var(--primary-glow);
+      transform: translateY(-2px);
+    }
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn-success {
+      background: #059669;
+      color: white;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+    }
+    .btn-success:hover {
+      background: #047857;
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    .code-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #93c5fd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: all;
+    }
+    .service-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #34d399;
+    }
+    .footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-live">
+        <span class="pulse-dot"></span>
+        AWS CLOUD CLUSTER ONLINE
+      </div>
+      <h1>Hybrid Fall Detection & Alert System</h1>
+      <p class="subtitle">
+        Centralized multimodal AI architecture combining smartphone IMU kinematics, computer vision pose estimation, and automated emergency dispatches.
+      </p>
+    </header>
+
+    <div class="grid">
+      <!-- Android App Download Card -->
+      <div class="card" style="border-color: rgba(16, 185, 129, 0.3);">
+        <div>
+          <div class="card-title">
+            <span>📱</span> FallAlert Android App
+          </div>
+          <p class="card-desc" style="margin-top: 10px;">
+            Install the companion Android client to stream real-time 9-channel IMU sensor data, receive audible alarms, and auto-dispatch emergency SMS with GPS coordinates.
+          </p>
+        </div>
+        <div>
+          <a href="/download/fallalert.apk" class="btn btn-success" style="width: 100%;">
+            ⬇️ Download APK (v1.0.0)
+          </a>
+          <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px;">
+            Android 8.0+ supported • Ready to install
+          </p>
+        </div>
+      </div>
+
+      <!-- Server Configuration for Mobile -->
+      <div class="card">
+        <div>
+          <div class="card-title">
+            <span>⚙️</span> Mobile App Server URL
+          </div>
+          <p class="card-desc" style="margin-top: 10px;">
+            Open FallAlert on your phone, navigate to settings, and set the <strong>Server URL</strong> to this endpoint:
+          </p>
+          <div class="code-box" style="margin-top: 14px;" id="server-url-box">
+            <span id="server-url-text">Loading endpoint...</span>
+          </div>
+        </div>
+        <div>
+          <div class="service-status">
+            <span class="pulse-dot"></span>
+            Alert Manager: <strong id="alert-status">Port 8002 Live</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D Digital Twin & Dashboard -->
+      <div class="card">
+        <div>
+          <div class="card-title">
+            <span>📊</span> 3D Digital Twin
+          </div>
+          <p class="card-desc" style="margin-top: 10px;">
+            Launch the interactive Streamlit 3D visualization dashboard with live kinematics, caretaker management, and real-time alert logs.
+          </p>
+        </div>
+        <div>
+          <a href="/dashboard/" target="_blank" class="btn btn-primary" style="width: 100%;">
+            🚀 Open Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Architecture Card -->
+    <div class="card" style="margin-top: 10px;">
+      <div class="card-title">
+        <span>🌐</span> Active Microservices Status
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+        <div class="code-box">
+          <span>Central Alert Manager</span>
+          <span style="color: #34d399;">:8002 (/status)</span>
+        </div>
+        <div class="code-box">
+          <span>Outdoor Sensor LSTM</span>
+          <span style="color: #34d399;">:8000 (/sensor)</span>
+        </div>
+        <div class="code-box">
+          <span>Streamlit Dashboard</span>
+          <span style="color: #34d399;">:8501 (/dashboard)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Hybrid Multimodal Fall Detection and Alert System (HMFDA) • Containerized with Docker & Nginx
+    </div>
+  </div>
+
+  <script>
+    // Dynamically display current host address for the mobile app setting
+    const currentHost = window.location.hostname;
+    const protocol = window.location.protocol;
+    const alertUrl = `${protocol}//${currentHost}:8002`;
+    document.getElementById('server-url-text').innerText = alertUrl;
+
+    // Check alert manager status
+    fetch('/status')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('alert-status').innerText = 'Connected & Operational';
+      })
+      .catch(() => {
+        document.getElementById('alert-status').innerText = 'Online (Direct Port 8002)';
+      });
+  </script>
+</body>
+</html>

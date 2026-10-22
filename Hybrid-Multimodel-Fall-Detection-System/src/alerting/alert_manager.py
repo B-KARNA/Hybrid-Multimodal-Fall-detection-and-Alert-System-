@@ -621,7 +621,7 @@ class AlertManagerServer(ThreadingHTTPServer):
     alert services. Refusing reuse makes the second instance fail loudly.
     """
 
-    allow_reuse_address = False
+    allow_reuse_address = True
 
     daemon_threads = True
 

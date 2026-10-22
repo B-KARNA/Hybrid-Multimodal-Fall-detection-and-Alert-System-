@@ -487,8 +487,9 @@ print("Confirmed falls reported to:", ALERT_MANAGER_URL)
 print("Waiting for Sensor Logger...")
 print("=" * 60)
 
+PORT = int(os.environ.get("SENSOR_PORT", "8000"))
 server = HTTPServer(
-    ("0.0.0.0", 8000),
+    ("0.0.0.0", PORT),
     SensorHandler
 )
 

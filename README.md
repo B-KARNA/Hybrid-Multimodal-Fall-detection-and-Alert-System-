@@ -99,14 +99,26 @@ python -m src.vision.indoor_detector
 
 ---
 
-### 2. Android FallAlert Setup
+### 3. Docker Containerization & AWS Cloud Deployment
 
-1. Open Android Studio (Ladybug / Iguana or newer).
-2. Select **Open** and choose the `FallAlert/` directory.
-3. Allow Gradle to sync.
-4. Set the **Server URL** in the app settings to your computer's local IP address (e.g., `http://192.168.1.X:8002`).
-5. Configure your emergency contact details and permissions (SMS, Phone Call, Location).
-6. Build and run on a physical Android device or emulator.
+To deploy the entire multimodal fall detection system to Docker or an AWS EC2 instance:
+
+```bash
+# 1. Quick local build & test
+docker compose up -d --build
+
+# 2. Or 1-command deployment on an AWS EC2 Ubuntu instance
+chmod +x deploy-aws.sh
+./deploy-aws.sh
+```
+
+**Services Launched:**
+- **Nginx Gateway & APK Portal** (`http://<SERVER-IP>/`): 1-click download of `fallalert.apk`.
+- **Central Alert Manager** (`http://<SERVER-IP>:8002`): Fall deduplication & mobile `/status` polling.
+- **Outdoor Sensor LSTM** (`http://<SERVER-IP>:8000`): Real-time 9-channel IMU tensor inference.
+- **3D Digital Twin Dashboard** (`http://<SERVER-IP>/dashboard/` or `:8501`): Streamlit real-time monitoring.
+
+For complete step-by-step AWS provisioning instructions (Security Groups, EC2 selection, SSL, etc.), see [AWS_DEPLOYMENT_GUIDE.md](file:///d:/HMFDA/AWS_DEPLOYMENT_GUIDE.md).
 
 ---
 
