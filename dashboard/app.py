@@ -2048,43 +2048,49 @@ elif page == "Outdoor":
         @st.fragment(run_every="1s")
         def live_phone_status():
 
-            connection = phone_connection_state()
+            # 1. Fetch live status from the Central Sensor Engine / Alert Manager
+            cloud_data = None
+            for s_url in [
+                "http://sensor-service:8000/status",
+                "http://alert-manager:8002/status",
+                "http://127.0.0.1:8000/status",
+                "http://127.0.0.1:8002/status",
+            ]:
+                try:
+                    import urllib.request
+                    req = urllib.request.Request(s_url, headers={"User-Agent": "StreamlitDashboard"})
+                    with urllib.request.urlopen(req, timeout=0.6) as resp:
+                        if resp.status == 200:
+                            data = json.loads(resp.read().decode())
+                            if data.get("samples", 0) > 0 or data.get("connected"):
+                                cloud_data = data
+                                break
+                except Exception:
+                    continue
 
             with phone_state["lock"]:
-
-                status = phone_state["status"]
-                probability = phone_state["probability"]
-                samples = len(
-                    phone_state["buffer"]
-                )
+                if cloud_data:
+                    samples = int(cloud_data.get("samples", 0))
+                    probability = float(cloud_data.get("probability", 0.0))
+                    is_fall = bool(cloud_data.get("fall", False))
+                    status = "FALL DETECTED" if is_fall else "NORMAL"
+                    connection = "ONLINE" if (samples > 0 or cloud_data.get("connected")) else "IDLE"
+                else:
+                    connection = phone_connection_state()
+                    status = phone_state["status"]
+                    probability = phone_state["probability"]
+                    samples = len(phone_state["buffer"])
 
             if connection == "ONLINE":
-
-                st.success(
-                    "🟢 Phone stream: ONLINE"
-                )
-
+                st.success("🟢 Phone stream: ONLINE")
             elif connection == "OFFLINE":
-
-                st.error(
-                    "🔴 Phone stream: OFFLINE"
-                )
-
+                st.error("🔴 Phone stream: OFFLINE")
             else:
-
-                st.warning(
-                    "🟡 Phone stream: IDLE — waiting for Sensor Logger"
-                )
+                st.warning("🟡 Phone stream: IDLE — waiting for FallAlert app")
 
             if samples < OUTDOOR_SEQUENCE_LENGTH:
-
-                st.info(
-                    f"Collecting sensor data: "
-                    f"{samples}/{OUTDOOR_SEQUENCE_LENGTH}"
-                )
-
+                st.info(f"Collecting sensor data: {samples}/{OUTDOOR_SEQUENCE_LENGTH}")
             else:
-
                 show_result(
                     status,
                     probability,
@@ -2094,15 +2100,8 @@ elif page == "Outdoor":
                     threshold=severity_threshold,
                 )
 
-            st.caption(
-                f"Live samples: "
-                f"{samples}/{OUTDOOR_SEQUENCE_LENGTH}"
-            )
-
-            st.code(
-                f"http://<YOUR-PC-IP>:{PHONE_PORT}",
-                language="text",
-            )
+            st.caption(f"Live samples in buffer: {samples}/{OUTDOOR_SEQUENCE_LENGTH}")
+            st.code("Set Server URL in FallAlert app to: http://<SERVER-IP>:8002", language="text")
 
         live_phone_status()
 
