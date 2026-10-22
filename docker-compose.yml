@@ -70,6 +70,7 @@ services:
       - TARGET_PHONE_NUMBER=${TARGET_PHONE_NUMBER:-}
     volumes:
       - ./Hybrid-Multimodel-Fall-Detection-System/data:/app/data
+      - ./Hybrid-Multimodel-Fall-Detection-System/app:/app/app
     restart: unless-stopped
     networks:
       - hmfda-net
