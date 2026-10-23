@@ -18,9 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
+# Install python dependencies (install CPU-only PyTorch first to prevent 3.5GB of CUDA wheels)
 COPY docker/requirements-dashboard.txt /tmp/requirements-dashboard.txt
 RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r /tmp/requirements-dashboard.txt
 
 # Copy backend application source code, models, and dashboard
