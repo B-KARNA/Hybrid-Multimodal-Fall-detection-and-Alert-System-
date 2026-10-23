@@ -356,12 +356,12 @@ chmod +x deploy-aws.sh
 3. Drop the smartphone onto a bed, sofa, or cushioned mat.
 4. **Phone Behavior**:
    * Loud siren sounds immediately.
-   * Visual countdown shows: `"False alarm window: SMS and auto-call in 8s"`.
-   * **Wait 8 seconds without touching Stop Alarm**: The phone dispatches the emergency SMS with GPS coordinates and dials the phone call automatically.
+   * Visual countdown shows: `"False alarm window: SMS and auto-call in 20s"`.
+   * **Wait 20 seconds without touching Stop Alarm**: The phone dispatches the emergency SMS with GPS coordinates and dials the phone call automatically.
 5. **Dashboard Behavior**:
    * The dashboard immediately flashes **`🚨 FALL DETECTED`**.
    * Displays **`CRITICAL FALL DETECTED — EMERGENCY DISPATCH ACTIVE!`** with severity score ($96.5\%$).
-   * Holds the active fall state for 20 seconds.
+   * Holds the active fall state for 30 seconds.
 
 ### 3. Test Manual Emergency Dispatch
 1. In the dashboard, navigate to **Caretakers & Alerts** &rarr; **Test Emergency Dispatch**.
@@ -414,7 +414,7 @@ TARGET_PHONE_NUMBER=+919876543210
   Refresh the browser tab, and the camera will display `🟢 Camera: ONLINE`.
 
 ### Q3: A fall happened on the phone, but SMS and Call didn't send?
-* **Check 1: Did you press "Stop Alarm"?** If you tap "Stop Alarm" during the 8-second siren countdown, the app cancels dispatch (assuming it was a false alarm). Wait the full 8 seconds.
+* **Check 1: Did you press "Stop Alarm"?** If you tap "Stop Alarm" during the 20-second siren countdown, the app cancels dispatch (assuming it was a false alarm). Wait the full 20 seconds.
 * **Check 2: Is On-Device Inertial Fallback toggled ON?** Ensure the switch is green/blue.
 * **Check 3: Is the Emergency Contact Saved?** Verify the number has the country code (e.g. `+91...`) and tap **Save Contact**.
 * **Check 4: Android App Permissions**: Go to *Android Settings &rarr; Apps &rarr; FallAlert &rarr; Permissions* &rarr; Grant **SMS**, **Phone**, and **Location**.

@@ -215,7 +215,7 @@ stateDiagram-v2
     
     state FallDetected {
         [*] --> CountdownActive : Start Siren & Vibration
-        CountdownActive --> Dispatched : 8 seconds expire without cancellation
+        CountdownActive --> Dispatched : 20 seconds expire without cancellation
         CountdownActive --> Cancelled : User taps "Stop Alarm"
     }
 

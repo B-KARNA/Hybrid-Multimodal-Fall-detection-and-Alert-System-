@@ -825,7 +825,7 @@ fun AlarmControlsCard(
                 text = if (countdownActive) {
                     "Stop Alarm in ${countdownSeconds}s to cancel automatic SMS and call"
                 } else {
-                    "Test Alarm starts sound now, then auto SMS + call after 8 seconds unless you stop it"
+                    "Test Alarm starts sound now, then auto SMS + call after 20 seconds unless you stop it"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (countdownActive) AlertRedPrimary else TextMuted
