@@ -26,6 +26,20 @@ sisfall/
 imu_fall_model.pkl
 *.orig
 
+# Environment & Secrets
+.env
+*.pem
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+scratch/
+scratch_*.py
+
 # Android build outputs & local properties
 .gradle/
 **/build/
@@ -35,4 +49,5 @@ local.properties
 
 # Large file dumps & backup directories
 structure.txt
-.backend_git_backup/
+.backend_git_backup/
+

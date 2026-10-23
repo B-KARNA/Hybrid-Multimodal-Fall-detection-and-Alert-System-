@@ -1,11 +1,5 @@
-# Build context filter for every image in deploy/.
-#
-# COPY already scopes exactly what lands in an image, so the job of this file
-# is to keep the context that gets sent to the Docker daemon small.
-#
-# NOTE: models/ is intentionally NOT excluded here. The backend image only
-# COPYs models/outdoor/, but the dashboard image needs models/vision/ as well,
-# and a .dockerignore applies to every build from this context.
+# Build context filter for every image in deploy/ and root Dockerfile
+# Keeps the build context sent to Docker daemon minimal and fast.
 
 # Python build artefacts
 __pycache__/
@@ -19,35 +13,46 @@ __pycache__/
 venv/
 env/
 
-# Version control
+# Version control & repo metadata
 .git/
 .gitignore
 .gitattributes
+.dockerignore
+.backend_git_backup/
 
-# Not needed at runtime by any image
-src/
+# Android mobile app (not needed by container images)
+FallAlert/
+
+# Documentation and large media files
+DOCUMENTATION.*
+*.pdf
+Supplementary.pdf
+structure.txt
+AWS_DEPLOYMENT_GUIDE.md
+README.md
+
+# Secrets & Keys
+.env
+*.pem
+
+# Non-runtime data & logs
 baseline/
 data/
 datasets/
 logs/
 notebooks/
+scratch/
+scratch_*.py
 
-# Streamlit UI and edge detector ship in their own images / stay local
-# (dashboard/ IS needed by the dashboard image, so it stays in the context)
-
-# Docs and samples
-*.pdf
-structure.txt
-Supplementary.pdf
-
-# Root-level duplicates of files that already live under models/ or baseline/
+# Root-level duplicates of files that already live under models/
 yolo11n-pose.pt
 pose_landmarker_lite.task
 vision_fall_model.pkl
 imumodel.py
 visionmodel.py
 
-# Scratch
+# Scratch & OS
 *.log
 *.tmp
 .DS_Store
+Thumbs.db
