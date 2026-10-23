@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMFDA - Technical System Specification & Architecture Manual</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for LaTeX mathematical equations -->
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Mermaid.js for architecture diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'neutral',
+                themeVariables: {
+                    fontSize: '14px',
+                    fontFamily: 'Inter, sans-serif',
+                    primaryColor: '#e0f2fe',
+                    primaryBorderColor: '#0284c7',
+                    primaryTextColor: '#0f172a'
+                }
+            });
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --primary-light: #e0f2fe;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --code-bg: #f1f5f9;
+            --success: #16a34a;
+            --danger: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.65;
+            margin: 0;
+            padding: 40px 20px;
+            font-size: 15px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            padding: 60px 80px;
+            border-radius: 16px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        h1, h2, h3, h4, h5 {
+            color: #0f172a;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-top: 0;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e2e8f0;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-top: 36px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #0369a1;
+        }
+
+        h3 {
+            font-size: 17px;
+            margin-top: 26px;
+            margin-bottom: 10px;
+            color: #1e293b;
+        }
+
+        h4 {
+            font-size: 15px;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        p, li {
+            color: #334155;
+            font-size: 14.5px;
+        }
+
+        ul, ol {
+            padding-left: 24px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', Consolas, monospace;
+            background: #f1f5f9;
+            color: #0f172a;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 13px;
+            border: 1px solid #e2e8f0;
+        }
+
+        pre {
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 18px 22px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 16px 0;
+            border: 1px solid #1e293b;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            border: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13.5px;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        tr:nth-child(even) {
+            background: #fcfdfe;
+        }
+
+        tr:hover {
+            background: #f1f5f9;
+        }
+
+        .mermaid {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #e2e8f0;
+            margin: 36px 0;
+        }
+
+        strong {
+            color: #0f172a;
+        }
+
+        .badge-pass {
+            background: #dcfce7;
+            color: #15803d;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        /* Print formatting */
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+                font-size: 12pt;
+                color: #000000;
+            }
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            pre, code {
+                background: #f8fafc !important;
+                color: #000000 !important;
+                border: 1px solid #cccccc !important;
+            }
+            table {
+                page-break-inside: avoid;
+            }
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+            @page {
+                margin: 2cm 1.5cm;
+                size: A4;
+            }
+        }
+
+        .print-toolbar {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            box-shadow: 0 2px 5px rgba(2, 132, 199, 0.2);
+            transition: background 0.15s;
+        }
+
+        .btn:hover {
+            background: #0369a1;
+        }
+
+        @media print {
+            .print-toolbar {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="print-toolbar">
+            <button class="btn" onclick="window.print()">
+                🖨️ Print / Save as PDF
+            </button>
+        </div>
+        <h1>📘 Technical System Specification &amp; Architecture Manual</h1>
+<h1>Hybrid multimodal fall detection vision based and sensor based &amp; emergency dispatch system (HMFDA)</h1>
+<hr />
+<h2>1. Executive Summary &amp; Problem Statement</h2>
+<p>Falls represent the leading cause of accidental injury and trauma in elderly populations globally. Conventional fall detection systems typically suffer from two severe limitations:<br />
+1. <strong>Single-modality blind spots</strong>: Wearable-only systems are frequently forgotten or left on charging docks; camera-only systems cannot protect the individual outside the home or in unmonitored zones.<br />
+2. <strong>False alarms and high latency</strong>: Sudden sitting, lying down, or dropping a phone causes false alarms that exhaust emergency services and caretakers.</p>
+<p><strong>HMFDA</strong> addresses these challenges via a <strong>hybrid multimodal edge-cloud architecture</strong>:<br />
+* <strong>Indoor Spaces</strong>: Non-intrusive ambient vision powered by <strong>YOLO11n-Pose</strong> (extracting 17 human body keypoints) and temporal <strong>Gated Recurrent Units (GRU)</strong> with temporal confirmation.<br />
+* <strong>Outdoor Spaces</strong>: Smartphone-based 9-channel inertial tracking (accelerometer, gravity, gyroscope) evaluated simultaneously by a <strong>Bidirectional Keras LSTM</strong> and on-device <strong>kinematic drop-shock physics heuristics</strong>.<br />
+* <strong>Cloud Brokerage</strong>: A centralized <strong>Alert Manager microservice</strong> providing idempotency, source-based cooldown, and an active alarm hold window.<br />
+* <strong>Emergency Dispatch</strong>: Automatic audible siren with an 8-second false alarm cancellation window, hands-free background SMS with live Google Maps GPS coordinate link, and direct cellular phone calls.</p>
+<hr />
+<h2>2. Mathematical Formulations &amp; Pipeline Mechanics</h2>
+<h3>2.1 Indoor Vision Pipeline (YOLO11n-Pose + GRU)</h3>
+<h4>A. Keypoint Extraction</h4>
+<p>Given an input video frame $\mathbf{I}<em>t \in \mathbb{R}^{H \times W \times 3}$ at time $t$, the YOLO11n-Pose backbone extracts $K = 17$ keypoints corresponding to the standard COCO human skeleton:<br />
+$$\mathcal{P}_t = \left{ (x</em>{i,t}, y_{i,t}, c_{i,t}) \right}_{i=1}^{17}$$<br />
+where $(x_i, y_i)$ are image pixel coordinates and $c_i \in [0, 1]$ represents landmark confidence.</p>
+<h4>B. Spatial Coordinate Normalization</h4>
+<p>To make the pose invariant to the subject's distance from the camera and physical height:<br />
+1. Calculate the mid-hip anatomical anchor:<br />
+   $$\bar{x}<em>{\text{hip}} = \frac{x</em>{11,t} + x_{12,t}}{2}, \quad \bar{y}<em>{\text{hip}} = \frac{y</em>{11,t} + y_{12,t}}{2}$$<br />
+2. Compute the bounding box height $H_{\text{bbox}} = y_{\max} - y_{\min}$.<br />
+3. Shift and scale all keypoints:<br />
+   $$\hat{x}<em>{i,t} = \frac{x</em>{i,t} - \bar{x}<em>{\text{hip}}}{H</em>{\text{bbox}}}, \quad \hat{y}<em>{i,t} = \frac{y</em>{i,t} - \bar{y}<em>{\text{hip}}}{H</em>{\text{bbox}}}$$<br />
+The normalized frame vector is $\mathbf{v}<em>t = [\hat{x}</em>{1,t}, \hat{y}<em>{1,t}, \dots, \hat{x}</em>{17,t}, \hat{y}_{17,t}]^T \in \mathbb{R}^{34}$.</p>
+<h4>C. Temporal Sequence Modeling via GRU</h4>
+<p>A sliding window of $T_{\text{vision}} = 20$ consecutive frames forms the temporal sequence:<br />
+$$\mathbf{X}<em>{\text{vision}} = [\mathbf{v}</em>{t-19}, \mathbf{v}_{t-18}, \dots, \mathbf{v}_t] \in \mathbb{R}^{20 \times 34}$$</p>
+<p>For each step $\tau \in {1, \dots, 20}$, the GRU cell updates its hidden state $h_\tau$:<br />
+$$\begin{aligned}<br />
+z_\tau &amp;= \sigma\left(\mathbf{W}<em>z \mathbf{v}</em>\tau + \mathbf{U}<em>z h</em>{\tau-1} + b_z\right) \quad &amp;&amp;\text{(Update gate)} \<br />
+r_\tau &amp;= \sigma\left(\mathbf{W}<em>r \mathbf{v}</em>\tau + \mathbf{U}<em>r h</em>{\tau-1} + b_r\right) \quad &amp;&amp;\text{(Reset gate)} \<br />
+\tilde{h}<em>\tau &amp;= \tanh\left(\mathbf{W}_h \mathbf{v}</em>\tau + \mathbf{U}<em>h (r</em>\tau \odot h_{\tau-1}) + b_h\right) \quad &amp;&amp;\text{(Candidate state)} \<br />
+h_\tau &amp;= (1 - z_\tau) \odot h_{\tau-1} + z_\tau \odot \tilde{h}_\tau \quad &amp;&amp;\text{(Hidden state)}<br />
+\end{aligned}$$</p>
+<p>The final hidden state $h_{20}$ is mapped to the fall probability:<br />
+$$p_{\text{vision}} = \sigma\left(\mathbf{W}<em>o h</em>{20} + b_o\right)$$</p>
+<h4>D. Multi-Frame Confirmation Rule</h4>
+<p>To suppress sudden motions (e.g., rapidly sitting on a chair), an alert is generated if and only if:<br />
+$$\sum_{k=0}^{M-1} \mathbb{I}\left(p_{\text{vision}, t-k} \ge \tau_{\text{vision}}\right) = M$$<br />
+where threshold $\tau_{\text{vision}} = 0.35$ and confirmation length $M = 3$ consecutive frames.</p>
+<hr />
+<h3>2.2 Outdoor Smartphone Inertial Pipeline (9-Channel LSTM + Kinematics)</h3>
+<h4>A. 9-Channel Sensor Representation</h4>
+<p>The smartphone streams 3 hardware sensors sampled at $f_s = 50\text{ Hz}$:<br />
+$$\mathbf{S}<em>t = \begin{bmatrix}<br />
+\mathbf{a}_t \<br />
+\mathbf{g}_t \<br />
+\boldsymbol{\omega}_t<br />
+\end{bmatrix} = \begin{bmatrix}<br />
+[a</em>{x,t}, a_{y,t}, a_{z,t}]^T &amp; \text{(Linear Acceleration)} \<br />
+[g_{x,t}, g_{y,t}, g_{z,t}]^T &amp; \text{(Gravitational Vector)} \<br />
+[\omega_{x,t}, \omega_{y,t}, \omega_{z,t}]^T &amp; \text{(Angular Velocity)}<br />
+\end{bmatrix} \in \mathbb{R}^9$$</p>
+<h4>B. Statistical Standardization</h4>
+<p>Continuous channels are normalized using the pre-computed SisFall training dataset statistics:<br />
+$$z_{t, k} = \frac{s_{t, k} - \mu_k}{\sigma_k}, \quad k \in {1, \dots, 9}$$<br />
+where $\mu_k$ and $\sigma_k$ are the mean and standard deviation of channel $k$.</p>
+<h4>C. Temporal Sliding Window &amp; LSTM Inference</h4>
+<p>A FIFO buffer stores $N = 200$ samples (equivalent to a 4.0-second temporal window at 50Hz):<br />
+$$\mathbf{X}<em>{\text{sensor}} = [\mathbf{z}</em>{t-199}, \dots, \mathbf{z}_t] \in \mathbb{R}^{200 \times 9}$$</p>
+<p>The Bidirectional LSTM processes the forward and backward representations:<br />
+$$\vec{h}<em>\tau = \text{LSTM}</em>{\text{fwd}}(\mathbf{z}<em>\tau, \vec{h}</em>{\tau-1}), \quad \overleftarrow{h}<em>\tau = \text{LSTM}</em>{\text{bwd}}(\mathbf{z}<em>\tau, \overleftarrow{h}</em>{\tau+1})$$<br />
+$$h_{\text{combined}} = [\vec{h}<em>{200} \,|\, \overleftarrow{h}_1]$$<br />
+$$p</em>{\text{lstm}} = \sigma\left(\mathbf{W}<em>{\text{dense}} h</em>{\text{combined}} + b_{\text{dense}}\right)$$</p>
+<h4>D. Physical Kinematics Impact Engine</h4>
+<p>In parallel with the neural network, physical acceleration magnitude is tracked across the most recent 60 samples ($\sim 1.2\text{s}$ window):<br />
+$$\mathcal{A}<em>t = \sqrt{a</em>{x,t}^2 + a_{y,t}^2 + a_{z,t}^2}$$<br />
+* <strong>Minimum Acceleration (Free-fall dip)</strong>: $a_{\min} = \min_{\tau \in [t-60, t]} \mathcal{A}<em>\tau$<br />
+* <strong>Maximum Acceleration (Impact spike)</strong>: $a</em>{\max} = \max_{\tau \in [t-60, t]} \mathcal{A}_\tau$</p>
+<p><strong>Kinematic Trigger Rule</strong>:<br />
+$$\text{KinematicFall} = \Big(a_{\max} \ge 14.0\text{ m/s}^2 \land a_{\min} \le 6.8\text{ m/s}^2\Big) \lor \Big(a_{\max} \ge 19.0\text{ m/s}^2\Big)$$</p>
+<p>$$\text{FinalOutdoorFall} = \text{KinematicFall} \lor \Big(p_{\text{lstm}} \ge 0.40\Big)$$</p>
+<hr />
+<h2>3. Microservice Architectural Specification &amp; API Contracts</h2>
+<h3>3.1 Network Topology &amp; Port Bindings</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Service</th>
+<th style="text-align: left;">Container Name</th>
+<th style="text-align: left;">Bind Address</th>
+<th style="text-align: left;">Internal / External Port</th>
+<th style="text-align: left;">Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Gateway</strong></td>
+<td style="text-align: left;"><code>hmfda-gateway</code></td>
+<td style="text-align: left;"><code>0.0.0.0</code></td>
+<td style="text-align: left;"><code>80</code> / <code>80</code></td>
+<td style="text-align: left;">HTTP / WebSocket</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Alert Manager</strong></td>
+<td style="text-align: left;"><code>hmfda-alert-manager</code></td>
+<td style="text-align: left;"><code>0.0.0.0</code></td>
+<td style="text-align: left;"><code>8002</code> / <code>8002</code></td>
+<td style="text-align: left;">HTTP / JSON</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Sensor Service</strong></td>
+<td style="text-align: left;"><code>hmfda-sensor-service</code></td>
+<td style="text-align: left;"><code>0.0.0.0</code></td>
+<td style="text-align: left;"><code>8000</code> / <code>8000</code></td>
+<td style="text-align: left;">HTTP / JSON</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Dashboard</strong></td>
+<td style="text-align: left;"><code>hmfda-dashboard</code></td>
+<td style="text-align: left;"><code>0.0.0.0</code></td>
+<td style="text-align: left;"><code>8501</code> / <code>8501</code></td>
+<td style="text-align: left;">HTTP / WebSocket</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>3.2 Central Alert Manager API Contracts (<code>Port 8002</code>)</h3>
+<p>The Alert Manager coordinates between detectors and mobile devices.</p>
+<h4>1. Ingest Confirmed Fall Event</h4>
+<ul>
+<li><strong>Endpoint</strong>: <code>POST /event</code></li>
+<li><strong>Headers</strong>: <code>Content-Type: application/json</code></li>
+<li><strong>Request Payload</strong>:<br />
+<code>json
+  {
+    "source": "indoor", // or "outdoor"
+    "event_id": "c1f7b830-672e-4b68-968b-59b5be2d8a43",
+    "timestamp": "2026-10-23T04:15:30.000Z",
+    "prediction": "FALL",
+    "probability": 0.965
+  }</code></li>
+<li><strong>Success Response (<code>200 OK</code>)</strong>:<br />
+<code>json
+  {
+    "accepted": true,
+    "event_id": "c1f7b830-672e-4b68-968b-59b5be2d8a43",
+    "hold_seconds": 20.0
+  }</code></li>
+<li><strong>Deduplication Response (<code>200 OK</code>)</strong>:<br />
+<code>json
+  {
+    "accepted": false,
+    "reason": "duplicate event_id or inside 15s cooldown",
+    "duplicate": true
+  }</code></li>
+</ul>
+<h4>2. Query System Status (Mobile Polling &amp; Dashboard)</h4>
+<ul>
+<li><strong>Endpoint</strong>: <code>GET /status</code></li>
+<li><strong>Response Payload</strong>:<br />
+<code>json
+  {
+    "probability": 0.965,
+    "fall": true,
+    "samples": 200,
+    "connected": true,
+    "source": "outdoor",
+    "last_event": {
+      "source": "outdoor",
+      "event_id": "c1f7b830-672e-4b68-968b-59b5be2d8a43",
+      "timestamp": "2026-10-23T04:15:30.000Z",
+      "prediction": "FALL",
+      "probability": 0.965
+    },
+    "pending_events": 1
+  }</code></li>
+</ul>
+<h4>3. Smartphone Sensor Batch Relay</h4>
+<ul>
+<li><strong>Endpoint</strong>: <code>POST /</code></li>
+<li><strong>Relay Target</strong>: Forwards raw payload to <code>OUTDOOR_DETECTOR_URL</code> (<code>http://sensor-service:8000/</code>).</li>
+<li><strong>Response</strong>: Returns the live evaluated probability and rolling buffer sample count.</li>
+</ul>
+<hr />
+<h3>3.3 Outdoor Sensor Microservice API (<code>Port 8000</code>)</h3>
+<ul>
+<li><strong>Endpoint</strong>: <code>POST /</code></li>
+<li>Receives 9-channel sensor batches (Sensor Logger format).</li>
+<li>Appends samples to rolling 200-sample queue.</li>
+<li>Evaluates LSTM model + kinematic thresholds.</li>
+<li>Automatically triggers <code>POST http://alert-manager:8002/event</code> if a fall is detected.</li>
+<li><strong>Endpoint</strong>: <code>GET /status</code></li>
+<li>Returns: <code>{"probability": 0.002, "threshold": 0.4, "fall": false, "samples": 200, "connected": true}</code></li>
+<li>When a fall occurs, holds <code>"fall": true</code> and <code>"probability": 0.965</code> for <strong>20 seconds</strong>.</li>
+</ul>
+<hr />
+<h2>4. Mobile Application Architecture (<code>FallAlert.apk</code>)</h2>
+<div class="codehilite"><pre><span></span><code>com.fallalert.app
+├── MainActivity.kt               # Entrypoint &amp; Runtime Permission Dispatcher
+├── data/
+│   └── ContactRepository.kt      # Encrypted SharedPreferences (Emergency Contact, Server URL)
+├── sensor/
+│   ├── SensorCollector.kt        # 50Hz SensorEventListener (Acc, Grav, Gyro) + Kinematics Engine
+│   ├── DetectionNetworkClient.kt # Non-blocking HttpURLConnection client (POST /, GET /status)
+│   └── LocationHelper.kt         # FusedLocationProviderClient (High-accuracy GPS updates)
+├── alert/
+│   ├── AlertController.kt        # MediaPlayer siren loop + Vibrator motor pulsing
+│   ├── EmergencyNotifier.kt      # SmsManager dispatcher + Intent.ACTION_CALL / ACTION_DIAL
+│   └── FallAlertState.kt         # StateFlow data models (UI state, emergency events)
+└── ui/
+    ├── FallAlertViewModel.kt     # State orchestration, countdown coroutines, dispatch state machine
+    ├── screens/HomeScreen.kt     # Jetpack Compose dark-mode UI with live telemetry
+    └── theme/                    # Material3 Design Tokens (AlertRed, SurfaceDark, Typography)
+</code></pre></div>
+
+<h3>Emergency Dispatch State Machine</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> Monitoring : User taps "Start Detection"
+    Monitoring --> FallDetected : Kinematic shock OR Cloud fall=true
+    
+    state FallDetected {
+        [*] --> CountdownActive : Start Siren & Vibration
+        CountdownActive --> Dispatched : 20 seconds expire without cancellation
+        CountdownActive --> Cancelled : User taps "Stop Alarm"
+    }
+
+    Cancelled --> Monitoring : System re-armed
+    
+    state Dispatched {
+        [*] --> SendSMS : Dispatches SMS via device SIM
+        SendSMS --> DialCall : Places direct cellular call
+        DialCall --> LocationLoop : GPS link every 30s
+    }
+
+    Dispatched --> Monitoring : User silences alarm
+</div>
+
+<hr />
+<h2>5. Production AWS Cloud Infrastructure</h2>
+<h3>Directory Structure on AWS EC2 (<code>/home/ubuntu/HMFDA</code>)</h3>
+<div class="codehilite"><pre><span></span><code>~/HMFDA/
+├── docker-compose.yml              # Production container orchestration
+├── .env                            # Secret credentials (Twilio, Ports, URLs)
+├── deploy-aws.sh                   # Automated provisioning script
+├── docker/
+│   ├── Dockerfile.backend          # Alert Manager &amp; Sensor Service image
+│   ├── Dockerfile.dashboard        # Streamlit 3D Digital Twin image
+│   ├── nginx.conf                  # Nginx reverse proxy configuration
+│   └── web/
+│       ├── index.html              # Cloud Gateway portal landing page
+│       └── download/
+│           └── fallalert.apk       # Downloadable Android companion package
+├── Hybrid-Multimodel-Fall-Detection-System/
+│   ├── sensor_service.py           # Multi-threaded Keras LSTM service
+│   ├── app/
+│   │   ├── app.py                  # Streamlit application
+│   │   ├── alert_system.py         # Caretaker and Twilio notification logic
+│   │   └── three_d_components.py   # 3D Room digital twin generator
+│   ├── models/
+│   │   ├── outdoor/best_outdoor_lstm.keras
+│   │   └── vision/yolo11n-pose.pt
+│   └── src/
+│       └── alerting/alert_manager.py
+</code></pre></div>
+
+<hr />
+<h2>6. End-to-End Verification &amp; Verification Matrix</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Test Scenario</th>
+<th style="text-align: left;">Input Action</th>
+<th style="text-align: left;">Expected System Response</th>
+<th style="text-align: left;">Verification Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Indoor Fall</strong></td>
+<td style="text-align: left;">Actor drops onto floor in front of webcam</td>
+<td style="text-align: left;">GRU confirms 3 frames $\ge 0.35$; sends <code>POST /event</code>; Dashboard turns red</td>
+<td style="text-align: left;"><span class="badge-pass">PASS</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Indoor Sitting</strong></td>
+<td style="text-align: left;">Actor sits down quickly in chair</td>
+<td style="text-align: left;">Pose aspect ratio shifts but confirmation fails; status stays safe</td>
+<td style="text-align: left;"><span class="badge-pass">PASS</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Outdoor Phone Drop</strong></td>
+<td style="text-align: left;">Phone dropped onto bed / sofa</td>
+<td style="text-align: left;">Accelerometer dips $&lt;6.8\text{ m/s}^2$ and spikes $&gt;14.0\text{ m/s}^2$; siren starts</td>
+<td style="text-align: left;"><span class="badge-pass">PASS</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>False Alarm Cancel</strong></td>
+<td style="text-align: left;">User taps "Stop Alarm" within 20s</td>
+<td style="text-align: left;">Siren stops immediately; no SMS or call dispatched; system re-arms</td>
+<td style="text-align: left;"><span class="badge-pass">PASS</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Real Fall Emergency</strong></td>
+<td style="text-align: left;">Phone dropped; 20s timer allowed to expire</td>
+<td style="text-align: left;">Phone sends SMS with Google Maps link + dials phone call to saved contact</td>
+<td style="text-align: left;"><span class="badge-pass">PASS</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Network Loss Fallback</strong></td>
+<td style="text-align: left;">Wi-Fi and mobile data turned off on phone</td>
+<td style="text-align: left;">On-Device Inertial Fallback triggers locally; siren and SMS/Call fire</td>
+<td style="text-align: left;"><span class="badge-pass">PASS</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>High Concurrency</strong></td>
+<td style="text-align: left;">Mobile app streams 6 batches/sec</td>
+<td style="text-align: left;"><code>ThreadingHTTPServer</code> processes non-blocking; 0 timeouts; 200 buffer</td>
+<td style="text-align: left;"><span class="badge-pass">PASS</span></td>
+</tr>
+</tbody>
+</table>
+    </div>
+</body>
+</html>

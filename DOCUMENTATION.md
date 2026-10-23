@@ -1,6 +1,5 @@
 # 📘 Technical System Specification & Architecture Manual
-## Hybrid Multimodal Fall Detection & Emergency Dispatch System (HMFDA)
-
+# Hybrid multimodal fall detection vision based and sensor based & emergency dispatch system (HMFDA)
 ---
 
 ## 1. Executive Summary & Problem Statement
@@ -270,7 +269,7 @@ stateDiagram-v2
 | **Indoor Fall** | Actor drops onto floor in front of webcam | GRU confirms 3 frames $\ge 0.35$; sends `POST /event`; Dashboard turns red | **PASS** |
 | **Indoor Sitting** | Actor sits down quickly in chair | Pose aspect ratio shifts but confirmation fails; status stays safe | **PASS** |
 | **Outdoor Phone Drop** | Phone dropped onto bed / sofa | Accelerometer dips $<6.8\text{ m/s}^2$ and spikes $>14.0\text{ m/s}^2$; siren starts | **PASS** |
-| **False Alarm Cancel** | User taps "Stop Alarm" within 8s | Siren stops immediately; no SMS or call dispatched; system re-arms | **PASS** |
-| **Real Fall Emergency** | Phone dropped; 8s timer allowed to expire | Phone sends SMS with Google Maps link + dials phone call to saved contact | **PASS** |
+| **False Alarm Cancel** | User taps "Stop Alarm" within 20s | Siren stops immediately; no SMS or call dispatched; system re-arms | **PASS** |
+| **Real Fall Emergency** | Phone dropped; 20s timer allowed to expire | Phone sends SMS with Google Maps link + dials phone call to saved contact | **PASS** |
 | **Network Loss Fallback**| Wi-Fi and mobile data turned off on phone | On-Device Inertial Fallback triggers locally; siren and SMS/Call fire | **PASS** |
 | **High Concurrency** | Mobile app streams 6 batches/sec | `ThreadingHTTPServer` processes non-blocking; 0 timeouts; 200 buffer | **PASS** |
