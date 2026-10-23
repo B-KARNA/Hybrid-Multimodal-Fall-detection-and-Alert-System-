@@ -335,15 +335,15 @@ def show_result(status, probability=None, location="Living Room", patient_name="
         st.caption(f"Raw Model Probability: {probability:.1%} | Severe Fall Threshold: {threshold:.0f}%")
 
         if status == "FALL DETECTED":
-            if sev_pct >= threshold:
-                # Severe Fall -> Dispatch emergency message to caretakers!
-                dispatch = alert_system.dispatch_emergency_alert(
-                    severity_percent=sev_pct,
-                    location=location,
-                    patient_name=patient_name,
-                    source=source,
-                    severity_threshold=threshold,
-                )
+            # Confirmed Fall -> Dispatch emergency SMS, automated Voice Call, and notify Alert Manager!
+            dispatch = alert_system.dispatch_emergency_alert(
+                severity_percent=sev_pct,
+                location=location,
+                patient_name=patient_name,
+                source=source,
+                severity_threshold=threshold,
+                force=True,
+            )
 
                 emergency_msg = (
                     f"🚨 EMERGENCY ALERT: Your relative ({patient_name}) has fallen at {location}! "
@@ -1068,6 +1068,7 @@ def create_live_camera_processor():
                 pose_model,
                 gru_model,
             )
+            self.last_alert_time = 0.0
 
         def recv(self, frame):
 
@@ -1075,11 +1076,24 @@ def create_live_camera_processor():
                 format="bgr24"
             )
 
-            output, _, _ = (
+            output, status, prob = (
                 self.detector.predict_frame(
                     image
                 )
             )
+
+            if status == "FALL DETECTED":
+                now = time.time()
+                if now - self.last_alert_time > 15.0:
+                    self.last_alert_time = now
+                    sev = alert_system.calculate_severity(prob if prob is not None else 0.85)
+                    alert_system.dispatch_emergency_alert(
+                        severity_percent=sev["percentage"],
+                        location="Indoor Camera",
+                        patient_name="Relative",
+                        source="Live Camera (Indoor)",
+                        force=True,
+                    )
 
             try:
                 import av
@@ -2010,6 +2024,15 @@ elif page == "Indoor":
                         caption=f"Skeleton Keypoint Result: {st_label} (Fall Probability: {st_prob if st_prob is not None else 0.0:.1%})",
                         use_container_width=True,
                     )
+                    if st_label == "FALL DETECTED":
+                        show_result(
+                            st_label,
+                            st_prob,
+                            location=monitored_location,
+                            patient_name=monitored_person,
+                            source="Indoor Camera (Snapshot)",
+                            threshold=severity_threshold,
+                        )
 
             except Exception as error:
 

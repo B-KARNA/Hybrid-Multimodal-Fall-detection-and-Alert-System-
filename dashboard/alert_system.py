@@ -1,9 +1,12 @@
 import os
 import json
 import time
+import uuid
+import threading
 import urllib.parse
+import urllib.request as urlrequest
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent
@@ -15,6 +18,54 @@ ALERTS_FILE = DATA_DIR / "alert_history.json"
 # In-memory alert cooldown tracker (location -> last_alert_time)
 _alert_cooldowns = {}
 DEFAULT_COOLDOWN_SECONDS = 30
+
+
+# ============================================================
+# ALERT MANAGER REPORTING (PORT 8002)
+# ============================================================
+
+def report_to_alert_manager(probability=1.0, source="indoor", location="Living Room"):
+    """
+    Relays confirmed indoor fall event to the Centralized Alert Manager on port 8002.
+    This triggers the Alert Manager so that:
+    1. /status endpoint reflects fall=True.
+    2. The FallAlert Android mobile companion app (which polls /status) sounds
+       its loud emergency siren, displays the 20s countdown, and triggers
+       its native cellular SMS & phone call dispatch!
+    """
+    def _post():
+        candidate_urls = [
+            os.environ.get("ALERT_MANAGER_URL", "http://alert-manager:8002/event"),
+            "http://alert-manager:8002/event",
+            "http://127.0.0.1:8002/event",
+            "http://localhost:8002/event",
+        ]
+        payload = json.dumps({
+            "source": "indoor",
+            "event_id": f"indoor_{int(time.time())}_{uuid.uuid4().hex[:6]}",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "prediction": "FALL",
+            "probability": float(probability) if probability is not None else 1.0,
+            "location": location
+        }).encode("utf-8")
+
+        for url in candidate_urls:
+            try:
+                req = urlrequest.Request(
+                    url,
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urlrequest.urlopen(req, timeout=3.0) as resp:
+                    if resp.status in (200, 202):
+                        print(f"[IndoorAlert] Reported to Alert Manager at {url}: {resp.status}")
+                        break
+            except Exception:
+                continue
+
+    threading.Thread(target=_post, daemon=True).start()
+
 
 
 # ============================================================
@@ -228,6 +279,12 @@ def dispatch_emergency_alert(
 
     _alert_cooldowns[cooldown_key] = now
 
+    # 1. ALWAYS RELAY TO CENTRALIZED ALERT MANAGER (Port 8002)
+    # This triggers the Alert Manager so the FallAlert Android app sounds its loud
+    # siren, displays the 20s cancel window, and sends on-device SMS & call!
+    prob_val = actual_severity / 100.0 if actual_severity else 0.9
+    report_to_alert_manager(prob_val, source="indoor", location=location)
+
     # The exact emergency message format requested by the user:
     message_text = (
         f"🚨 EMERGENCY ALERT: Your relative ({patient_name}) has fallen at {location}! "
@@ -257,15 +314,40 @@ def dispatch_emergency_alert(
         status = "QUEUED (WhatsApp Ready)"
 
         if twilio_client and clean_phone:
+            # 1. Dispatch SMS via Twilio
+            sms_status = ""
             try:
                 msg = twilio_client.messages.create(
                     body=message_text,
                     from_=from_number,
                     to=clean_phone
                 )
-                status = f"SENT via Twilio (SID: {msg.sid[:8]})"
+                sms_status = f"SMS: Sent ({msg.sid[:8]})"
             except Exception as tw_err:
-                status = f"Twilio SMS Error: {str(tw_err)[:40]}"
+                sms_status = f"SMS Err: {str(tw_err)[:25]}"
+
+            # 2. Dispatch Automated Emergency Voice Call via Twilio
+            call_status = ""
+            try:
+                twiml_voice = (
+                    f"<Response>"
+                    f"<Say voice='alice' language='en-US'>"
+                    f"Emergency alert! A fall has been detected for {patient_name} at {location}. "
+                    f"Fall severity is {actual_severity} percent. "
+                    f"Please respond immediately!"
+                    f"</Say>"
+                    f"</Response>"
+                )
+                call = twilio_client.calls.create(
+                    twiml=twiml_voice,
+                    from_=from_number,
+                    to=clean_phone
+                )
+                call_status = f"Call: Dialed ({call.sid[:8]})"
+            except Exception as call_err:
+                call_status = f"Call Err: {str(call_err)[:25]}"
+
+            status = f"{sms_status} | {call_status}"
 
         dispatch_results.append({
             "caretaker_name": c["name"],
