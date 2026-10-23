@@ -25,3 +25,14 @@ sisfall/
 # Large intermediate models
 imu_fall_model.pkl
 *.orig
+
+# Android build outputs & local properties
+.gradle/
+**/build/
+local.properties
+*.apk
+*.class
+
+# Large file dumps & backup directories
+structure.txt
+.backend_git_backup/
