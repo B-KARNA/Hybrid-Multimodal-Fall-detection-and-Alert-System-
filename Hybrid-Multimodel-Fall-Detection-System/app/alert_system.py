@@ -239,10 +239,33 @@ def dispatch_emergency_alert(
     caretakers = get_caretakers()
     dispatch_results = []
 
+    twilio_client = None
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    from_number = os.environ.get("TWILIO_PHONE_NUMBER")
+    if account_sid and auth_token and from_number:
+        try:
+            from twilio.rest import Client
+            twilio_client = Client(account_sid, auth_token)
+        except Exception:
+            twilio_client = None
+
     for c in caretakers:
         clean_phone = "".join(ch for ch in c["phone"] if ch.isdigit() or ch == "+")
         encoded_msg = urllib.parse.quote(message_text)
         wa_link = f"https://wa.me/{clean_phone.replace('+', '')}?text={encoded_msg}"
+        status = "QUEUED (WhatsApp Ready)"
+
+        if twilio_client and clean_phone:
+            try:
+                msg = twilio_client.messages.create(
+                    body=message_text,
+                    from_=from_number,
+                    to=clean_phone
+                )
+                status = f"SENT via Twilio (SID: {msg.sid[:8]})"
+            except Exception as tw_err:
+                status = f"Twilio SMS Error: {str(tw_err)[:40]}"
 
         dispatch_results.append({
             "caretaker_name": c["name"],
@@ -250,7 +273,7 @@ def dispatch_emergency_alert(
             "phone": c["phone"],
             "email": c["email"],
             "channel": c.get("channel", "WhatsApp & SMS"),
-            "status": "SENT",
+            "status": status,
             "whatsapp_link": wa_link,
         })
 
