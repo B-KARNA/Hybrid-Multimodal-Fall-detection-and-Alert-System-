@@ -10,6 +10,7 @@ import sys
 import urllib.parse
 import subprocess
 import shutil
+import base64
 from pathlib import Path
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -59,8 +60,8 @@ PHONE_PORT = 8000
 VISION_SEQUENCE_LENGTH = 20
 VISION_FALL_THRESHOLD = 0.35
 VISION_CONFIRM_FRAMES = 3
-YOLO_CONFIDENCE = 0.50
-KEYPOINT_DRAW_CONFIDENCE = 0.20
+YOLO_CONFIDENCE = 0.25
+KEYPOINT_DRAW_CONFIDENCE = 0.10
 MAX_MISSED_FRAMES = 8
 PROBABILITY_SMOOTHING_WINDOW = 3
 FALL_ALERT_HOLD_FRAMES = 90
@@ -647,6 +648,9 @@ def draw_person(
         p1 = tuple(keypoints[start].astype(int))
         p2 = tuple(keypoints[end].astype(int))
 
+        if p1[0] <= 0 or p1[1] <= 0 or p2[0] <= 0 or p2[1] <= 0:
+            continue
+
         cv2.line(
             output,
             p1,
@@ -662,7 +666,7 @@ def draw_person(
 
         x, y = keypoints[i].astype(int)
 
-        if 0 <= x < w and 0 <= y < h:
+        if 0 < x < w and 0 < y < h:
             # Outer dark ring for contrast on light backgrounds
             cv2.circle(
                 output,
@@ -927,6 +931,7 @@ def analyse_uploaded_video(uploaded_file):
     final_status = "NORMAL"
     max_probability = 0.0
     frame_no = 0
+    snapshot_frames = []
 
     while True:
 
@@ -949,6 +954,8 @@ def analyse_uploaded_video(uploaded_file):
                 max_probability,
                 probability,
             )
+            if (probability >= 0.60 or status == "FALL DETECTED") and len(snapshot_frames) < 3:
+                snapshot_frames.append(cv2.cvtColor(output, cv2.COLOR_BGR2RGB))
 
         if frame_no % 3 == 0:
             preview.image(
@@ -969,6 +976,10 @@ def analyse_uploaded_video(uploaded_file):
 
     cap.release()
     writer.release()
+
+    # Clear preview and progress placeholders so no broken image remains
+    preview.empty()
+    progress.empty()
 
     try:
         input_path.unlink()
@@ -1006,12 +1017,11 @@ def analyse_uploaded_video(uploaded_file):
         except Exception:
             final_output_path = output_path
 
-    progress.progress(1.0)
-
     return (
         final_output_path,
         final_status,
         max_probability,
+        snapshot_frames,
     )
 
 
@@ -1025,9 +1035,17 @@ try:
         WebRtcMode,
         VideoProcessorBase,
     )
+    import av
     WEBRTC_AVAILABLE = True
 except ImportError:
     WEBRTC_AVAILABLE = False
+
+RTC_CONFIGURATION = {
+    "iceServers": [
+        {"urls": ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]},
+        {"urls": ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"]},
+    ]
+}
 
 
 def create_live_camera_processor():
@@ -1054,10 +1072,17 @@ def create_live_camera_processor():
                 )
             )
 
-            return frame.from_ndarray(
-                output,
-                format="bgr24",
-            )
+            try:
+                import av
+                return av.VideoFrame.from_ndarray(
+                    output,
+                    format="bgr24",
+                )
+            except Exception:
+                return frame.from_ndarray(
+                    output,
+                    format="bgr24",
+                )
 
     return LiveProcessor
 
@@ -1933,11 +1958,16 @@ elif page == "Indoor":
                 ctx = webrtc_streamer(
                     key="indoor-yolo11-camera",
                     mode=WebRtcMode.SENDRECV,
+                    rtc_configuration=RTC_CONFIGURATION,
                     video_processor_factory=(
                         create_live_camera_processor()
                     ),
                     media_stream_constraints={
-                        "video": True,
+                        "video": {
+                            "width": {"ideal": 640},
+                            "height": {"ideal": 480},
+                            "frameRate": {"ideal": 20},
+                        },
                         "audio": False,
                     },
                     async_processing=True,
@@ -1945,16 +1975,32 @@ elif page == "Indoor":
 
                 if ctx.state.playing:
                     st.success(
-                        "🟢 Camera: ONLINE"
+                        "🟢 Camera: ONLINE — Pose skeleton keypoints active"
                     )
                 else:
                     st.warning(
-                        "🟡 Camera: IDLE — press START"
+                        "🟡 Camera: IDLE — press START to activate live camera"
                     )
 
                 st.caption(
                     "YOLO11n-Pose → 17 keypoints → GRU → fall probability"
                 )
+
+                st.markdown("---")
+                st.markdown("#### 📸 Instant Camera Test (Snapshot & Skeleton Tracking)")
+                st.caption("Works on all phones, tablets, and computers even without WebRTC permissions:")
+                cam_snap = st.camera_input("Capture instant photo to verify 17-keypoint skeleton overlay", key="indoor_snapshot_cam")
+                if cam_snap is not None:
+                    snap_data = cam_snap.getvalue()
+                    img_np = cv2.imdecode(np.frombuffer(snap_data, np.uint8), cv2.IMREAD_COLOR)
+                    pose_m, gru_m = load_vision_models()
+                    det = VisionFallDetector(pose_m, gru_m)
+                    annotated, st_label, st_prob = det.predict_frame(img_np)
+                    st.image(
+                        cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB),
+                        caption=f"Skeleton Keypoint Result: {st_label} (Fall Probability: {st_prob if st_prob is not None else 0.0:.1%})",
+                        use_container_width=True,
+                    )
 
             except Exception as error:
 
@@ -2004,6 +2050,7 @@ elif page == "Indoor":
                             output_path,
                             status,
                             probability,
+                            snapshots,
                         ) = analyse_uploaded_video(
                             uploaded_video
                         )
@@ -2023,6 +2070,10 @@ elif page == "Indoor":
                         st.session_state[
                             "processed_video_probability"
                         ] = probability
+
+                        st.session_state[
+                            "processed_video_snapshots"
+                        ] = snapshots
 
                     except Exception as error:
 
@@ -2046,12 +2097,41 @@ elif page == "Indoor":
                 if output_path.exists():
 
                     st.subheader(
-                        "Analysed Video"
+                        "Analysed Video (17 Skeleton Keypoints)"
                     )
 
-                    st.video(
-                        str(output_path)
+                    video_bytes = output_path.read_bytes()
+                    b64_video = base64.b64encode(video_bytes).decode("utf-8")
+
+                    # Direct base64 HTML5 video player: 100% immune to Starlette ASGI Range issues
+                    st.markdown(
+                        f"""
+                        <div style="background: #0f172a; border: 2px solid #38bdf8; border-radius: 14px; padding: 12px; margin: 14px 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="color: #38bdf8; font-weight: 700; font-size: 15px;">
+                                    🎥 Universal Web Player (17 Body Keypoints & Skeleton Bones)
+                                </span>
+                                <span style="background: #1e293b; color: #94a3b8; font-size: 12px; padding: 2px 8px; border-radius: 6px;">
+                                    H.264 Universal Web
+                                </span>
+                            </div>
+                            <video width="100%" height="auto" controls autoplay loop playsinline style="border-radius: 8px; display: block; background: #000; max-height: 520px;">
+                                <source src="data:video/mp4;base64,{b64_video}" type="video/mp4">
+                                Your browser does not support HTML5 video.
+                            </video>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
                     )
+
+                    # Show snapshot gallery if keyframes captured
+                    snapshots = st.session_state.get("processed_video_snapshots", [])
+                    if snapshots:
+                        st.markdown("##### 🔍 Keyframe Keypoint Captures (Peak Fall Frames):")
+                        cols = st.columns(min(len(snapshots), 3))
+                        for idx, snap in enumerate(snapshots[:3]):
+                            with cols[idx]:
+                                st.image(snap, caption=f"Detection Frame #{idx + 1}", use_container_width=True)
 
                     show_result(
                         st.session_state[
@@ -2066,19 +2146,14 @@ elif page == "Indoor":
                         threshold=severity_threshold,
                     )
 
-                    with open(
-                        output_path,
-                        "rb",
-                    ) as file:
-
-                        st.download_button(
-                            "Download analysed video",
-                            data=file,
-                            file_name=(
-                                "fall_detection_result.mp4"
-                            ),
-                            mime="video/mp4",
-                        )
+                    st.download_button(
+                        "📥 Download analysed video (with keypoints)",
+                        data=video_bytes,
+                        file_name=(
+                            "fall_detection_result.mp4"
+                        ),
+                        mime="video/mp4",
+                    )
 
 # ============================================================
 # OUTDOOR
@@ -2322,12 +2397,22 @@ elif page == "Automatic":
                         output_path,
                         status,
                         probability,
+                        snapshots,
                     ) = analyse_uploaded_video(
                         file
                     )
 
-                    st.video(
-                        str(output_path)
+                    vid_b = Path(output_path).read_bytes()
+                    b64_b = base64.b64encode(vid_b).decode("utf-8")
+                    st.markdown(
+                        f"""
+                        <div style="background: #0f172a; border: 2px solid #38bdf8; border-radius: 12px; padding: 10px; margin: 12px 0;">
+                            <video width="100%" height="auto" controls autoplay loop playsinline style="border-radius: 8px; display: block; max-height: 480px; background: #000;">
+                                <source src="data:video/mp4;base64,{b64_b}" type="video/mp4">
+                            </video>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
                     )
 
                     show_result(
