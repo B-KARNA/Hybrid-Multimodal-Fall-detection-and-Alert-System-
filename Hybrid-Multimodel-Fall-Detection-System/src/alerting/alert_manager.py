@@ -62,11 +62,11 @@ OUTDOOR_DETECTOR_URL = os.environ.get(
 ).rstrip("/")
 
 # How long a confirmed event keeps the app-facing /status reporting fall=True.
-# Must comfortably cover the phone's 8s false-alarm cancel window.
+# Comfortably covers the phone's 20s false-alarm cancel window.
 ALERT_HOLD_SECONDS = float(
     os.environ.get(
         "ALERT_HOLD_SECONDS",
-        "20"
+        "30"
     )
 )
 

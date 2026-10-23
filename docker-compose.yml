@@ -14,8 +14,8 @@ services:
     environment:
       - ALERT_MANAGER_PORT=8002
       - OUTDOOR_DETECTOR_URL=http://sensor-service:8000
-      - ALERT_HOLD_SECONDS=${ALERT_HOLD_SECONDS:-20}
-      - SOURCE_COOLDOWN_SECONDS=${SOURCE_COOLDOWN_SECONDS:-15}
+      - ALERT_HOLD_SECONDS=${ALERT_HOLD_SECONDS:-30}
+      - SOURCE_COOLDOWN_SECONDS=${SOURCE_COOLDOWN_SECONDS:-20}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8002/status || exit 1"]
       interval: 15s
@@ -40,6 +40,7 @@ services:
     environment:
       - SENSOR_PORT=8000
       - ALERT_MANAGER_URL=http://alert-manager:8002
+      - FALL_HOLD_SECONDS=${FALL_HOLD_SECONDS:-30}
     depends_on:
       alert-manager:
         condition: service_healthy

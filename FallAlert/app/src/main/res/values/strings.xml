@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">FallAlert</string>
+    <string name="status_monitoring">Armed &amp; Monitoring</string>
+    <string name="status_fall_detected">EMERGENCY: FALL DETECTED!</string>
+    <string name="emergency_contact_label">Emergency Contact Phone Number</string>
+    <string name="emergency_contact_placeholder">+1 (555) 019-2834</string>
+    <string name="save_contact">Save Contact</string>
+    <string name="test_alarm">Test Alarm</string>
+    <string name="stop_alarm">Stop Alarm</string>
+</resources>

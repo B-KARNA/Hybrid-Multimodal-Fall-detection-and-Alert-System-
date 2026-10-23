@@ -34,7 +34,7 @@ ALERT_MANAGER_URL = os.environ.get(
 ).rstrip("/") + "/event"
 
 # No more than one outdoor event report per physical fall episode.
-REPORT_COOLDOWN_SECONDS = 15.0
+REPORT_COOLDOWN_SECONDS = float(os.environ.get("REPORT_COOLDOWN_SECONDS", "25.0"))
 
 # ---------------------------------------------------------
 # LOAD MODEL + SCALER
@@ -54,7 +54,7 @@ buffer_lock = threading.Lock()
 
 latest_probability = 0.0
 last_fall_time = 0.0
-FALL_HOLD_SECONDS = 20.0
+FALL_HOLD_SECONDS = float(os.environ.get("FALL_HOLD_SECONDS", "30.0"))
 
 
 # ---------------------------------------------------------

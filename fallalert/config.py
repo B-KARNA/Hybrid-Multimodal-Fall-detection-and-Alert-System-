@@ -75,10 +75,10 @@ ALERT_MANAGER_EVENT_URL = ALERT_MANAGER_BASE_URL + "/event"
 ALERT_MANAGER_STATUS_URL = ALERT_MANAGER_BASE_URL + "/status"
 
 # How long a confirmed event keeps the app-facing /status reporting fall=True.
-# Must comfortably cover the app's 8 second false-alarm cancel window.
+# Comfortably covers the app's 20 second false-alarm cancel window.
 ALERT_HOLD_SECONDS = _env_float(
     "ALERT_HOLD_SECONDS",
-    20
+    30
 )
 
 # A second event from the same source inside this window is assumed to be the

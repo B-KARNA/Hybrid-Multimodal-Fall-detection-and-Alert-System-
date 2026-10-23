@@ -8,6 +8,8 @@ import threading
 import csv
 import sys
 import urllib.parse
+import subprocess
+import shutil
 from pathlib import Path
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -601,20 +603,35 @@ def draw_person(
     y1 = max(0, min(y1, h - 1))
     y2 = max(0, min(y2, h - 1))
 
+    # Scale line thickness and radius according to video frame size
+    scale = max(1.0, min(w, h) / 480.0)
+    box_thick = max(2, int(scale * 2.0))
+    line_thick = max(2, int(scale * 2.2))
+    circle_radius = max(4, int(scale * 3.5))
+
     cv2.rectangle(
         output,
         (x1, y1),
         (x2, y2),
-        (255, 0, 0),
-        2,
+        (255, 120, 0),
+        box_thick,
     )
 
+    label = f"Person {detection_confidence:.2f}"
+    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55 * scale, 2)
+    cv2.rectangle(
+        output,
+        (x1, max(0, y1 - th - 8)),
+        (x1 + tw + 6, y1),
+        (255, 120, 0),
+        -1,
+    )
     cv2.putText(
         output,
-        f"Person {detection_confidence:.2f}",
-        (x1, max(25, y1 - 8)),
+        label,
+        (x1 + 3, max(th + 2, y1 - 4)),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
+        0.55 * scale,
         (255, 255, 255),
         2,
         cv2.LINE_AA,
@@ -635,7 +652,7 @@ def draw_person(
             p1,
             p2,
             (255, 0, 255),
-            2,
+            line_thick,
             cv2.LINE_AA,
         )
 
@@ -646,10 +663,20 @@ def draw_person(
         x, y = keypoints[i].astype(int)
 
         if 0 <= x < w and 0 <= y < h:
+            # Outer dark ring for contrast on light backgrounds
             cv2.circle(
                 output,
                 (x, y),
-                4,
+                circle_radius + 1,
+                (0, 0, 0),
+                -1,
+                cv2.LINE_AA,
+            )
+            # Bright neon green keypoint dot
+            cv2.circle(
+                output,
+                (x, y),
+                circle_radius,
                 (0, 255, 0),
                 -1,
                 cv2.LINE_AA,
@@ -948,10 +975,41 @@ def analyse_uploaded_video(uploaded_file):
     except Exception:
         pass
 
+    # Transcode to web-compatible H.264 (yuv420p) for seamless HTML5 <video> playback
+    final_output_path = output_path
+    if shutil.which("ffmpeg"):
+        web_output_path = output_path.with_name(f"web_{output_path.name}")
+        try:
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-i", str(output_path),
+                "-vcodec", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-preset", "veryfast",
+                "-crf", "23",
+                "-movflags", "+faststart",
+                str(web_output_path),
+            ]
+            res = subprocess.run(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=180,
+            )
+            if res.returncode == 0 and web_output_path.exists() and web_output_path.stat().st_size > 0:
+                try:
+                    output_path.unlink()
+                except Exception:
+                    pass
+                final_output_path = web_output_path
+        except Exception:
+            final_output_path = output_path
+
     progress.progress(1.0)
 
     return (
-        output_path,
+        final_output_path,
         final_status,
         max_probability,
     )
