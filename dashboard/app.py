@@ -345,80 +345,76 @@ def show_result(status, probability=None, location="Living Room", patient_name="
                 force=True,
             )
 
-                emergency_msg = (
-                    f"🚨 EMERGENCY ALERT: Your relative ({patient_name}) has fallen at {location}! "
-                    f"Fall severity is {sev_pct:.1f}%. Please go and save the person immediately!"
-                )
+            emergency_msg = (
+                f"🚨 EMERGENCY ALERT: Your relative ({patient_name}) has fallen at {location}! "
+                f"Fall severity is {sev_pct:.1f}%. Please go and save the person immediately!"
+            )
 
-                st.markdown(
-                    f"""
-                    <div class="emergency-pulse-box">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 32px; animation: bounce 1s infinite;">🚨</span>
-                                <div>
-                                    <div style="color: #b42318; font-weight: 800; font-size: 19px; letter-spacing: -0.3px;">
-                                        CRITICAL FALL DETECTED — EMERGENCY DISPATCH ACTIVE!
-                                    </div>
-                                    <div style="color: #64748b; font-size: 13px;">
-                                        Incident verified at <strong>{location}</strong>. High severity score ({sev_pct:.1f}%). Caretakers notified instantly.
-                                    </div>
+            st.markdown(
+                f"""
+                <div class="emergency-pulse-box">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 32px; animation: bounce 1s infinite;">🚨</span>
+                            <div>
+                                <div style="color: #b42318; font-weight: 800; font-size: 19px; letter-spacing: -0.3px;">
+                                    CRITICAL FALL DETECTED — EMERGENCY DISPATCH ACTIVE!
+                                </div>
+                                <div style="color: #64748b; font-size: 13px;">
+                                    Incident verified at <strong>{location}</strong>. High severity score ({sev_pct:.1f}%). Caretakers notified instantly.
                                 </div>
                             </div>
-                            <span style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; text-transform:uppercase;">
-                                SOS Broadcasted
-                            </span>
                         </div>
-                        <div style="background: #ffffff; border: 1px solid #fecaca; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #1e293b; line-height: 1.5; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-                            📢 <strong>Automated Message Sent to Caretakers:</strong><br/>
-                            <span style="color: #b91c1c;">"{emergency_msg}"</span>
-                        </div>
+                        <span style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; text-transform:uppercase;">
+                            SOS Broadcasted
+                        </span>
                     </div>
-                    <script>
-                    try {{
-                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
-                        osc.type = 'sawtooth';
-                        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.35);
-                        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-                        osc.connect(gain);
-                        gain.connect(audioCtx.destination);
-                        osc.start();
-                        osc.stop(audioCtx.currentTime + 0.35);
-                    }} catch(e) {{}}
-                    </script>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                    <div style="background: #ffffff; border: 1px solid #fecaca; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #1e293b; line-height: 1.5; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                        📢 <strong>Automated Message Sent to Caretakers:</strong><br/>
+                        <span style="color: #b91c1c;">"{emergency_msg}"</span>
+                    </div>
+                </div>
+                <script>
+                try {{
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                }} catch(e) {{}}
+                </script>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                # Show contact cards for registered caretakers
-                caretakers = alert_system.get_caretakers()
-                if caretakers:
-                    st.markdown("<div style='margin-top:10px; font-weight:700; font-size:13px; color:#1e293b;'>CARETAKERS CONTACTED:</div>", unsafe_allow_html=True)
-                    cols = st.columns(min(len(caretakers), 3))
-                    for idx, c in enumerate(caretakers[:3]):
-                        with cols[idx]:
-                            clean_phone = "".join(ch for ch in c["phone"] if ch.isdigit())
-                            msg_encoded = urllib.parse.quote(emergency_msg)
-                            st.markdown(
-                                f"""
-                                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; font-size: 13px; margin-bottom: 6px;">
-                                    <strong>{c['name']}</strong><br/>
-                                    <span style="color: #64748b; font-size: 11px;">{c['relation']}</span><br/>
-                                    📞 <code>{c['phone']}</code><br/>
-                                    <span style="color: #16a34a; font-weight: 600; font-size: 11px;">✓ Emergency Alert Sent</span>
-                                </div>
-                                <a href="https://wa.me/{clean_phone}?text={msg_encoded}" target="_blank" style="display:inline-block; width:100%; text-align:center; background:#25D366; color:white; padding:6px 0; border-radius:6px; font-size:12px; text-decoration:none; font-weight:700;">💬 Open WhatsApp</a>
-                                """,
-                                unsafe_allow_html=True,
-                            )
-            else:
-                st.info(
-                    f"ℹ️ Fall severity is **{sev_pct:.1f}%** ({cat}), which is below the critical threshold ({threshold:.0f}%). Automated caretaker emergency alerts are reserved for severe falls."
-                )
+            # Show contact cards for registered caretakers
+            caretakers = alert_system.get_caretakers()
+            if caretakers:
+                st.markdown("<div style='margin-top:10px; font-weight:700; font-size:13px; color:#1e293b;'>CARETAKERS CONTACTED:</div>", unsafe_allow_html=True)
+                cols = st.columns(min(len(caretakers), 3))
+                for idx, c in enumerate(caretakers[:3]):
+                    with cols[idx]:
+                        clean_phone = "".join(ch for ch in c["phone"] if ch.isdigit())
+                        msg_encoded = urllib.parse.quote(emergency_msg)
+                        st.markdown(
+                            f"""
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; font-size: 13px; margin-bottom: 6px;">
+                                <strong>{c['name']}</strong><br/>
+                                <span style="color: #64748b; font-size: 11px;">{c['relation']}</span><br/>
+                                📞 <code>{c['phone']}</code><br/>
+                                <span style="color: #16a34a; font-weight: 600; font-size: 11px;">✓ Emergency Alert Sent</span>
+                            </div>
+                            <a href="https://wa.me/{clean_phone}?text={msg_encoded}" target="_blank" style="display:inline-block; width:100%; text-align:center; background:#25D366; color:white; padding:6px 0; border-radius:6px; font-size:12px; text-decoration:none; font-weight:700;">💬 Open WhatsApp</a>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
 
 # ============================================================
